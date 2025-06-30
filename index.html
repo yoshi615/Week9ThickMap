@@ -7,28 +7,76 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <select id="basemap-select" style="position:absolute;z-index:1;top:10px;left:10px;">
+    <option value="satellite">Googleサテライト</option>
+    <option value="positron">Carto Positron</option>
+    <option value="darkmatter">Carto Dark Matter</option>
+  </select>
   <div id="map"></div>
 
   <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
   <script>
-    const map = new maplibregl.Map({
+    // ベースマップスタイル定義
+    const styles = {
+      satellite: {
+        version: 8,
+        sources: {
+          'google-satellite': {
+            type: 'raster',
+            tiles: [
+              'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
+            ],
+            tileSize: 256,
+            attribution: 'Map data &copy; <a href="https://www.google.com/intl/en_us/help/terms_maps/" target="_blank">Google</a>',
+            maxzoom: 21
+          }
+        },
+        layers: [
+          {
+            id: 'google-satellite-layer',
+            type: 'raster',
+            source: 'google-satellite'
+          }
+        ]
+      },
+      positron: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+      darkmatter: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
+    };
+
+    // 初期中心・ズーム
+    const center = [-30, 40];
+    const zoom = 2.2;
+
+    // マップ初期化
+    let map = new maplibregl.Map({
       container: 'map',
-      style: 'https://demotiles.maplibre.org/style.json', // ベースマップ
-      center: [-30, 40], // アメリカとイランの中間あたり（大西洋上空）
-      zoom: 2.2 // 両国が見えるズーム
+      style: styles.satellite,
+      center: center,
+      zoom: zoom
     });
 
-    // アメリカの位置にマーカー
-    new maplibregl.Marker({ color: 'blue' })
-      .setLngLat([-100, 40])
-      .setPopup(new maplibregl.Popup().setText('アメリカ'))
-      .addTo(map);
+    // マーカー追加関数
+    function addMarkers(mapInstance) {
+      // アメリカ
+      new maplibregl.Marker({ color: 'blue' })
+        .setLngLat([-100, 40])
+        .setPopup(new maplibregl.Popup().setText('アメリカ'))
+        .addTo(mapInstance);
+      // イラン
+      new maplibregl.Marker({ color: 'red' })
+        .setLngLat([53, 32])
+        .setPopup(new maplibregl.Popup().setText('イラン'))
+        .addTo(mapInstance);
+    }
 
-    // イランの位置にマーカー
-    new maplibregl.Marker({ color: 'red' })
-      .setLngLat([53, 32])
-      .setPopup(new maplibregl.Popup().setText('イラン'))
-      .addTo(map);
+    addMarkers(map);
+
+    // ベースマップ切替
+    document.getElementById('basemap-select').addEventListener('change', function(e) {
+      const selected = e.target.value;
+      map.setStyle(styles[selected]);
+      map.once('styledata', () => addMarkers(map));
+    });
   </script>
 </body>
 </html>
