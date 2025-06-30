@@ -14,14 +14,20 @@
     const map = new maplibregl.Map({
       container: 'map',
       style: 'https://demotiles.maplibre.org/style.json', // ベースマップ
-      center: [139.7671, 35.6812], // 東京駅 (経度, 緯度)
-      zoom: 1
+      center: [-30, 40], // アメリカとイランの中間あたり（大西洋上空）
+      zoom: 2.2 // 両国が見えるズーム
     });
 
-    // ポップアップ（吹き出し）を追加
-    const popup = new maplibregl.Popup({ offset: 25 })
-      .setLngLat([139.7671, 35.6812])
-      .setHTML("<h3>Hello world!</h3><p>Greetings from Japan!🇯🇵</p>")
+    // アメリカの位置にマーカー
+    new maplibregl.Marker({ color: 'blue' })
+      .setLngLat([-100, 40])
+      .setPopup(new maplibregl.Popup().setText('アメリカ'))
+      .addTo(map);
+
+    // イランの位置にマーカー
+    new maplibregl.Marker({ color: 'red' })
+      .setLngLat([53, 32])
+      .setPopup(new maplibregl.Popup().setText('イラン'))
       .addTo(map);
   </script>
 </body>
