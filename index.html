@@ -1,19 +1,26 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>What's happened?</title>
+  <!-- MapLibre GL スタイルシート -->
   <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet" />
+  <!-- カスタムスタイルシート -->
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- ベースマップ選択ドロップダウン -->
   <select id="basemap-select" style="position:absolute;z-index:1;top:10px;left:10px;">
     <option value="satellite">Googleサテライト</option>
     <option value="positron">Carto Positron</option>
     <option value="darkmatter">Carto Dark Matter</option>
   </select>
+  
+  <!-- メインマップコンテナ -->
   <div id="map"></div>
-  <!-- 時系列バー -->
+  
+  <!-- 時系列スライダーバー -->
   <div id="timeline-bar">
     <input type="range" id="timeline-range" min="2000" max="2025" value="2010" step="1">
     <span id="timeline-label">2010</span>
@@ -26,130 +33,20 @@
     </div>
   </div>
 
-  <!-- 画像をアニメーションで飛ばすためのimg要素を追加 -->
-  <img id="b2-plane" src="images/B2.png" style="position:absolute; width:48px; height:auto; pointer-events:none; z-index:10; display:none;" />
-  <img id="rocket" src="images/ロケット.png" style="position:absolute; width:60px; height:auto; pointer-events:none; z-index:11; display:none;" />
+  <!-- アニメーション用の画像要素 -->
+  <!-- B2爆撃機画像 (2005年のイベント用) -->
+  <img id="b2-plane" src="images/B2.png" 
+       style="position:absolute; width:48px; height:auto; pointer-events:none; z-index:10; display:none;" 
+       alt="B2爆撃機" />
+  
+  <!-- ロケット画像 (2025年のイベント用) -->
+  <img id="rocket" src="images/ロケット.png" 
+       style="position:absolute; width:60px; height:auto; pointer-events:none; z-index:11; display:none;" 
+       alt="ロケット" />
 
+  <!-- 外部ライブラリとスクリプト -->
   <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
+  <!-- メインアプリケーションスクリプト -->
   <script src="map.js"></script>
-  <script>
-    // ロケットアニメーション関数
-    function flyRocket() {
-      // 既存のロケット画像を非表示
-      document.getElementById('rocket').style.display = 'none';
-
-      // 既存の複製ロケットを削除
-      document.querySelectorAll('.rocket-clone').forEach(e => e.remove());
-
-      // 6個のロケットを発射
-      const rocketCount = 6;
-      const angleStep = 40; // 弧の角度のずらし幅（度数、調整可）
-      const baseOffset = -100; // 弧の高さの基準（調整可）
-
-      for (let i = 0; i < rocketCount; i++) {
-        // クローンを作成
-        const rocket = document.getElementById('rocket').cloneNode(true);
-        rocket.classList.add('rocket-clone');
-        rocket.style.display = 'block';
-        rocket.style.opacity = '1';
-        rocket.style.position = 'absolute';
-        rocket.style.pointerEvents = 'none';
-        rocket.style.zIndex = 11;
-        rocket.id = ''; // id重複防止
-        document.body.appendChild(rocket);
-
-        // 角度ずらし（-100〜+100pxの範囲で弧の高さを変える）
-        const angleOffset = (i - (rocketCount - 1) / 2) * angleStep;
-        const rad = angleOffset * Math.PI / 180;
-
-        function lngLatToScreen(lngLat) {
-          const p = map.project(lngLat);
-          return { x: p.x, y: p.y };
-        }
-        function getAngle(from, to) {
-          const dx = to.x - from.x;
-          const dy = to.y - from.y;
-          // 画像の「下が進行方向」なら+90度
-          return Math.atan2(dy, dx) * 180 / Math.PI + 90;
-        }
-
-        // イラン→アメリカ
-        let start = lngLatToScreen(iranLngLat);
-        let end = lngLatToScreen(usaLngLat);
-
-        // 弧のコントロールポイント（中間点を上方向にずらす）
-        const midX = (start.x + end.x) / 2;
-        const midY = (start.y + end.y) / 2;
-        const dx = end.x - start.x;
-        const dy = end.y - start.y;
-        // 垂直方向の単位ベクトル
-        const len = Math.sqrt(dx * dx + dy * dy);
-        const nx = -dy / len;
-        const ny = dx / len;
-        // コントロールポイントを中心から垂直方向にずらす
-        const control = {
-          x: midX,
-          y: midY - Math.abs(baseOffset + 60 * Math.sin(rad)) // 上方向にずらす（マイナスで上）
-        };
-
-        let t = 0;
-        function easeInOutSine(x) {
-          return -(Math.cos(Math.PI * x) - 1) / 2;
-        }
-        function getBezierPoint(t) {
-          // 2次ベジェ曲線
-          const x = (1 - t) * (1 - t) * start.x + 2 * (1 - t) * t * control.x + t * t * end.x;
-          const y = (1 - t) * (1 - t) * start.y + 2 * (1 - t) * t * control.y + t * t * end.y;
-          return { x, y };
-        }
-        function getBezierAngle(t) {
-          // ベジェ曲線の接線方向
-          const dx = 2 * (1 - t) * (control.x - start.x) + 2 * t * (end.x - control.x);
-          const dy = 2 * (1 - t) * (control.y - start.y) + 2 * t * (end.y - control.y);
-          return Math.atan2(dy, dx) * 180 / Math.PI + 90;
-        }
-        function animate() {
-          t += 0.008;
-          if (t > 1) t = 1;
-          const tt = easeInOutSine(t);
-          const pos = getBezierPoint(tt);
-          const bezierAngle = getBezierAngle(tt);
-          rocket.style.left = (pos.x - 30) + 'px';
-          rocket.style.top = (pos.y - 30) + 'px';
-          rocket.style.transform = `rotate(${bezierAngle}deg)`;
-          // フェードアウトをゴール直前から始める
-          if (t > 0.85) {
-            rocket.style.opacity = String(1 - (t - 0.85) / 0.15);
-          } else {
-            rocket.style.opacity = "1";
-          }
-          if (t < 1) {
-            requestAnimationFrame(animate);
-          } else {
-            rocket.style.display = "none";
-            rocket.style.transition = "";
-            rocket.style.opacity = "1";
-            rocket.remove();
-          }
-        }
-        animate();
-      }
-    }
-
-    // --- スライダーイベントに追加 ---
-    timelineRange.addEventListener('input', function() {
-      timelineLabel.textContent = timelineRange.value;
-      if (timelineRange.value === "2005") {
-        flyB2Plane();
-      } else {
-        document.getElementById('b2-plane').style.display = 'none';
-      }
-      if (timelineRange.value === "2025") {
-        flyRocket();
-      } else {
-        document.getElementById('rocket').style.display = 'none';
-      }
-    });
-  </script>
 </body>
 </html>
