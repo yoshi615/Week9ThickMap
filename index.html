@@ -88,8 +88,8 @@
         const ny = dx / len;
         // コントロールポイントを中心から垂直方向にずらす
         const control = {
-          x: midX + nx * (baseOffset + 60 * Math.sin(rad)),
-          y: midY + ny * (baseOffset + 60 * Math.sin(rad))
+          x: midX,
+          y: midY - Math.abs(baseOffset + 60 * Math.sin(rad)) // 上方向にずらす（マイナスで上）
         };
 
         let t = 0;
