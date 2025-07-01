@@ -5,6 +5,149 @@ html, body {
 }
 
 #map {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+}
+
+#timeline-bar {
+  position: absolute;
+  left: 20px;
+  bottom: 20px;
+  background: rgba(255,255,255,0.95);
+  padding: 14px 20px 30px 20px;
+  border-radius: 12px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.13);
+  border: 1.5px solid #bbb;
+}
+
+#timeline-range {
+  width: 260px;
+  accent-color: #1976d2;
+  height: 4px;
+  margin-bottom: 2px;
+}
+
+#timeline-label {
+  font-weight: bold;
+  min-width: 40px;
+  text-align: center;
+  margin-left: 12px;
+  color: #1976d2;
+  font-size: 1.1em;
+}
+
+#timeline-ticks {
+  position: relative;
+  width: 260px;
+  height: 18px;
+  margin-top: 4px;
+}
+
+#timeline-ticks .tick {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: 13px;
+  color: #333;
+  pointer-events: none;
+  user-select: none;
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+/* スライダーのつまみを大きく・目立たせる */
+#timeline-range::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  background: #1976d2;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+#timeline-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: #1976d2;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+  cursor: pointer;
+}
+
+#timeline-range::-ms-thumb {
+  width: 18px;
+  height: 18px;
+  background: #1976d2;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+  cursor: pointer;
+}
+
+/* スライダーのバー部分 */
+#timeline-range::-webkit-slider-runnable-track {
+  height: 6px;
+  background: linear-gradient(90deg, #1976d2 0%, #90caf9 100%);
+  border-radius: 3px;
+}
+
+#timeline-range::-ms-fill-lower {
+  background: #1976d2;
+}
+
+#timeline-range::-ms-fill-upper {
+  background: #90caf9;
+}
+
+/* B2飛行機のアニメーション用スタイル */
+#b2-plane {
+  transition: all 0.1s linear;
+  filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+}
+
+/* なめらかなアニメーション用のクラス */
+.smooth-animation {
+  animation: smooth-flight 0.2s ease-in-out infinite alternate;
+}
+
+@keyframes smooth-flight {
+  0% {
+    transform: translateY(0px) scale(1);
+  }
+  100% {
+    transform: translateY(-2px) scale(1.02);
+  }
+}
+
+/* 飛行機の軌跡エフェクト */
+.flight-trail {
+  position: absolute;
+  width: 3px;
+  height: 20px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 100%);
+  pointer-events: none;
+  z-index: 9;
+  border-radius: 1px;
+  animation: trail-fade 0.5s ease-out forwards;
+}
+
+@keyframes trail-fade {
+  0% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
 }
