@@ -22,14 +22,14 @@
   
   <!-- 時系列スライダーバー -->
   <div id="timeline-bar">
-    <input type="range" id="timeline-range" min="2000" max="2025" value="2010" step="1">
-    <span id="timeline-label">2010</span>
+    <input type="range" id="timeline-range" min="0" max="4" value="0" step="1">
+    <span id="timeline-label">2020/01/08</span>
     <div id="timeline-ticks">
-      <span class="tick" style="left:0%;">2000</span>
-      <span class="tick" style="left:25%;">2005</span>
-      <span class="tick" style="left:50%;">2012</span>
-      <span class="tick" style="left:75%;">2018</span>
-      <span class="tick" style="left:100%;">2025</span>
+      <span class="tick" style="left:0%;">2020/01</span>
+      <span class="tick" style="left:25%;">2021/10</span>
+      <span class="tick" style="left:50%;">2024/02</span>
+      <span class="tick" style="left:75%;">2024/11</span>
+      <span class="tick" style="left:100%;">現在</span>
     </div>
   </div>
 
@@ -40,12 +40,14 @@
        alt="B2爆撃機" />
   
   <!-- ロケット画像 (2025年のイベント用) -->
-  <img id="rocket" src="images/ロケット.png" 
+  <img id="rocket" src="images/missile.png" 
        style="position:absolute; width:60px; height:auto; pointer-events:none; z-index:11; display:none;" 
        alt="ロケット" />
 
   <!-- 外部ライブラリとスクリプト -->
   <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
+  <!-- データ取得スクリプト -->
+  <script src="getdata.js"></script>
   <!-- メインアプリケーションスクリプト -->
   <script src="map.js"></script>
 </body>

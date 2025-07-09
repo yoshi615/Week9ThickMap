@@ -46,14 +46,14 @@ let map = new maplibregl.Map({
 // ==============================
 
 // アメリカとイランの座標（グローバルに定義）
-const usaLngLat = [-100, 40];
-const iranLngLat = [53, 32];
+const usaLngLat = [-77.0369, 38.9072];  // ワシントンD.C.
+const iranLngLat = [51.3890, 35.6892];  // テヘラン
 
 // マーカー追加関数
 function addMarkers(mapInstance) {
   // アメリカ（青いマーカー画像）
   const usaMarker = document.createElement('div');
-  usaMarker.style.backgroundImage = 'url(images/mp_colored_blue2.png)';
+  usaMarker.style.backgroundImage = 'url(images/mp_colored_blue.png)';
   usaMarker.style.width = '50px';
   usaMarker.style.height = '50px';
   usaMarker.style.backgroundSize = 'contain';
@@ -68,7 +68,7 @@ function addMarkers(mapInstance) {
 
   // イラン（赤いマーカー画像）
   const iranMarker = document.createElement('div');
-  iranMarker.style.backgroundImage = 'url(images/mp_colored_red2.png)';
+  iranMarker.style.backgroundImage = 'url(images/mp_colored_red.png)';
   iranMarker.style.width = '50px';
   iranMarker.style.height = '50px';
   iranMarker.style.backgroundSize = 'contain';
@@ -283,12 +283,49 @@ function flyRocket() {
 }
 
 // ==============================
+// CSV日付データとイベント管理
+// ==============================
+
+// CSVから読み取った攻撃データ
+const attackEvents = [
+  { date: '2020/01/08', attacks: [
+    { lat: 34.3142, lng: 47.0650, attacker: 1, target: 'イラン革命防衛隊の基地' },
+    { lat: 33.7866, lng: 42.4411, attacker: 2, target: '米軍基地' },
+    { lat: 36.2381, lng: 43.9632, attacker: 2, target: '米軍基地' }
+  ]},
+  { date: '2021/10/20', attacks: [
+    { lat: 33.2232, lng: 44.3168, attacker: 1, target: 'イラン系武装組織の活動拠点' },
+    { lat: 33.4406, lng: 38.6150, attacker: 2, target: '米軍駐留地' }
+  ]},
+  { date: '2024/02/03', attacks: [
+    { lat: 16.9403, lng: 43.7631, attacker: 1, target: 'フーシ派の紅海攻撃の拠点' },
+    { lat: 29.5581, lng: 34.9482, attacker: 2, target: 'イスラエル領' }
+  ]},
+  { date: '2024/11/19', attacks: [
+    { lat: 20.0, lng: 40.0, attacker: 2, target: '米艦船や商船' }
+  ]}
+];
+
+// CSVから読み取った日付データ（ユニークな日付のみ）
+const csvDates = [
+  { index: 0, date: '2020/01/08', year: 2020, month: 1, day: 8, description: 'イラン革命防衛隊基地・米軍基地攻撃', hasB2: true, hasMissile: true },
+  { index: 1, date: '2021/10/20', year: 2021, month: 10, day: 20, description: 'バグダッド・アル＝タンフ基地攻撃', hasB2: false, hasMissile: true },
+  { index: 2, date: '2024/02/03', year: 2024, month: 2, day: 3, description: 'サアダ州・エイラット攻撃', hasB2: false, hasMissile: true },
+  { index: 3, date: '2024/11/19', year: 2024, month: 11, day: 19, description: '紅海上攻撃', hasB2: false, hasMissile: true },
+  { index: 4, date: '現在', year: 2024, month: 12, day: 1, description: '現在の状況', hasB2: false, hasMissile: false }
+];
+
+// ==============================
 // イベントハンドラーと地図初期化
 // ==============================
 
 // 地図ロード時
 map.on('load', () => {
   addMarkers(map);
+  // CSVデータからのマーカーも追加（getdata.jsから呼び出される）
+  if (typeof addCSVMarkers === 'function') {
+    addCSVMarkers();
+  }
 });
 
 // ベースマップ切替時
@@ -299,23 +336,35 @@ document.getElementById('basemap-select').addEventListener('change', function(e)
     map.setCenter(center);
     map.setZoom(zoom);
     addMarkers(map);
+    // CSVデータからのマーカーも再追加
+    if (typeof addCSVMarkers === 'function') {
+      addCSVMarkers();
+    }
   });
 });
 
 // 時系列スライダーイベントハンドラー
-// 2005年でB2爆撃機、2025年でロケット発射
 const timelineRange = document.getElementById('timeline-range');
 const timelineLabel = document.getElementById('timeline-label');
 timelineRange.addEventListener('input', function() {
-  timelineLabel.textContent = timelineRange.value;
-  if (timelineRange.value === "2005") {
-    flyB2Plane();
-  } else {
-    document.getElementById('b2-plane').style.display = 'none';
-  }
-  if (timelineRange.value === "2025") {
-    flyRocket();
-  } else {
-    document.getElementById('rocket').style.display = 'none';
+  const index = parseInt(timelineRange.value);
+  const currentEvent = csvDates[index];
+  
+  if (currentEvent) {
+    timelineLabel.textContent = currentEvent.date;
+    
+    // B2爆撃機イベント
+    if (currentEvent.hasB2) {
+      flyB2Plane();
+    } else {
+      document.getElementById('b2-plane').style.display = 'none';
+    }
+    
+    // ミサイル攻撃イベント（CSVデータ対応）
+    if (currentEvent.hasMissile) {
+      flyRocket(currentEvent.date);
+    } else {
+      document.getElementById('rocket').style.display = 'none';
+    }
   }
 });
