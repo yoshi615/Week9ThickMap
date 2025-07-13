@@ -25,7 +25,8 @@ html, body {
   z-index: 2;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
+  min-width: 420px;
   gap: 10px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.13);
   border: 1.5px solid #bbb;
@@ -35,7 +36,7 @@ html, body {
    スライダーのスタイリング
    ============================== */
 #timeline-range {
-  width: 260px;
+  width: 420px;
   accent-color: #1976d2;
   height: 4px;
   margin-bottom: 2px;
@@ -52,7 +53,7 @@ html, body {
 
 #timeline-ticks {
   position: relative;
-  width: 260px;
+  width: 420px;
   height: 18px;
   margin-top: 4px;
 }
@@ -60,14 +61,26 @@ html, body {
 #timeline-ticks .tick {
   position: absolute;
   top: 0;
+  left: 0;
+  width: auto;
+  height: auto;
+  background: none;
+  border: none;
+  border-radius: 0;
+  text-align: center;
+
+  line-height: normal;
   transform: translateX(-50%);
-  font-size: 13px;
-  color: #333;
+  font-size: 11px;
+  color: #1976d2;
   pointer-events: none;
   user-select: none;
   font-family: 'Segoe UI', sans-serif;
   font-weight: 500;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.1px;
+  writing-mode: horizontal-tb;
+  box-shadow: none;
+  background-clip: border-box;
 }
 
 /* ==============================

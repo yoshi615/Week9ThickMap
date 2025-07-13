@@ -30,8 +30,10 @@ const styles = {
 };
 
 // 初期中心・ズーム設定
-const center = [-30, 40];
-const zoom = 2.2;
+// イラク周辺（アイン・アル＝アサド空軍基地付近）を中心に
+// エルビル空港（イラク北部）とサアダ州（イエメン北部）が両方入る中心とズーム
+const center = [44, 28];
+const zoom = 3.7;
 
 // マップ初期化
 let map = new maplibregl.Map({
@@ -82,194 +84,7 @@ function addMarkers(mapInstance) {
     .addTo(mapInstance);
 }
 
-// ==============================
-// B2爆撃機アニメーション（2005年イベント）
-// ==============================
 
-// B2飛行機アニメーション関数
-function flyB2Plane() {
-  const plane = document.getElementById('b2-plane');
-  plane.style.display = 'block';
-  plane.style.opacity = '1';
-
-  function lngLatToScreen(lngLat) {
-    const p = map.project(lngLat);
-    return { x: p.x, y: p.y };
-  }
-  function getAngle(from, to) {
-    const dx = to.x - from.x;
-    const dy = to.y - from.y;
-    // 画像の「左が上、右が下」なので進行方向-180度
-    return Math.atan2(dy, dx) * 180 / Math.PI - 180;
-  }
-
-  // スタート・ゴールの画面座標
-  let start = lngLatToScreen(usaLngLat);   // アメリカ
-  let mid = lngLatToScreen(iranLngLat);    // イラン
-
-  // 直線移動→旋回→直線移動
-  let t = 0;
-  let phase = 0; // 0:アメリカ→イラン, 1:旋回, 2:イラン→アメリカ
-
-  // 旋回用パラメータ
-  const turnSteps = 120; // ←大きくするとより滑らか
-  let turnCount = 0;
-  let turnCenter = { x: mid.x, y: mid.y }; // イラン上空で旋回
-  let turnRadius = 60;
-  let turnStartAngle = getAngle(start, mid) * Math.PI / 180;
-  let turnEndAngle = turnStartAngle + Math.PI; // 半円旋回
-
-  let angle = getAngle(start, mid);
-
-  function easeInOutSine(x) {
-    // 0～1の値をなめらかに補間
-    return -(Math.cos(Math.PI * x) - 1) / 2;
-  }
-
-  function animate() {
-    if (phase === 0) {
-      t += 0.008; // ゆっくり
-      if (t > 1) {
-        t = 1;
-        phase = 1;
-      }
-      // イージングでなめらかに
-      const tt = easeInOutSine(t);
-      const x = start.x + (mid.x - start.x) * tt;
-      const y = start.y + (mid.y - start.y) * tt;
-      angle = getAngle({ x, y }, mid);
-      plane.style.left = (x - 24) + 'px';
-      plane.style.top = (y - 24) + 'px';
-      plane.style.transform = `rotate(${angle}deg)`;
-    } else if (phase === 1) {
-      turnCount++;
-      if (turnCount > turnSteps) {
-        turnCount = turnSteps;
-        phase = 2;
-        t = 1;
-      }
-      // イージングでなめらかに
-      const tt = easeInOutSine(turnCount / turnSteps);
-      const theta = turnStartAngle + (Math.PI * tt);
-      const x = turnCenter.x + turnRadius * Math.cos(theta);
-      const y = turnCenter.y + turnRadius * Math.sin(theta);
-      angle = theta * 180 / Math.PI - 45;
-      plane.style.left = (x - 24) + 'px';
-      plane.style.top = (y - 24) + 'px';
-      plane.style.transform = `rotate(${angle}deg)`;
-    } else if (phase === 2) {
-      t -= 0.008;
-      if (t <= 0) {
-        t = 0;
-        plane.style.display = 'none';
-        return;
-      }
-      // イージングでなめらかに（帰還時はイラン→アメリカなので座標を逆算）
-      const tt = easeInOutSine(t);
-      const x = mid.x + (start.x - mid.x) * (1 - tt);
-      const y = mid.y + (start.y - mid.y) * (1 - tt);
-      // 帰還時の角度計算を修正（アメリカ方向を向く）
-      angle = getAngle({ x, y }, start);
-      plane.style.left = (x - 24) + 'px';
-      plane.style.top = (y - 24) + 'px';
-      plane.style.transform = `rotate(${angle}deg)`;
-    }
-    requestAnimationFrame(animate);
-  }
-  animate();
-}
-
-// ==============================
-// ロケットアニメーション（2025年イベント）
-// ==============================
-
-// ロケットアニメーション関数
-function flyRocket() {
-  // 既存のロケット画像を非表示
-  document.getElementById('rocket').style.display = 'none';
-
-  // 既存の複製ロケットを削除
-  document.querySelectorAll('.rocket-clone').forEach(e => e.remove());
-
-  // 1つだけロケットを発射
-  const rocket = document.getElementById('rocket').cloneNode(true);
-  rocket.classList.add('rocket-clone');
-  rocket.style.display = 'block';
-  rocket.style.opacity = '1';
-  rocket.style.position = 'absolute';
-  rocket.style.pointerEvents = 'none';
-  rocket.style.zIndex = 11;
-  rocket.id = '';
-  document.body.appendChild(rocket);
-
-  function lngLatToScreen(lngLat) {
-    const p = map.project(lngLat);
-    return { x: p.x, y: p.y };
-  }
-  function getAngle(from, to) {
-    const dx = to.x - from.x;
-    const dy = to.y - from.y;
-    // 画像の「下が進行方向」なら+90度
-    return Math.atan2(dy, dx) * 180 / Math.PI + 90;
-  }
-
-  // イラン→アメリカ
-  let start = lngLatToScreen(iranLngLat);
-  let end = lngLatToScreen(usaLngLat);
-
-  // 弧のコントロールポイント（中間点を上方向にずらす）
-  const midX = (start.x + end.x) / 2;
-  const midY = (start.y + end.y) / 2;
-  const dx = end.x - start.x;
-  const dy = end.y - start.y;
-  // 垂直方向の単位ベクトル
-  const len = Math.sqrt(dx * dx + dy * dy);
-  const nx = -dy / len;
-  const ny = dx / len;
-  // コントロールポイントを中心から垂直方向に少しだけずらす（弧を小さく）
-  const control = {
-    x: midX,
-    y: midY - 60 // 弧をより明確にして飛行機のような軌道に
-  };
-
-  let t = 0;
-  function easeInOutSine(x) {
-    return -(Math.cos(Math.PI * x) - 1) / 2;
-  }
-  function getBezierPoint(t) {
-    // 2次ベジェ曲線
-    const x = (1 - t) * (1 - t) * start.x + 2 * (1 - t) * t * control.x + t * t * end.x;
-    const y = (1 - t) * (1 - t) * start.y + 2 * (1 - t) * t * control.y + t * t * end.y;
-    return { x, y };
-  }
-  function getBezierAngle(t) {
-    // ベジェ曲線の接線方向
-    const dx = 2 * (1 - t) * (control.x - start.x) + 2 * t * (end.x - control.x);
-    const dy = 2 * (1 - t) * (control.y - start.y) + 2 * t * (end.y - control.y);
-    return Math.atan2(dy, dx) * 180 / Math.PI + 90;
-  }
-  function animate() {
-    t += 0.008;
-    if (t > 1) {
-      t = 1;
-      // アニメーション終了時の処理
-      rocket.remove();
-      return;
-    }
-    const tt = easeInOutSine(t);
-    const pos = getBezierPoint(tt);
-    const bezierAngle = getBezierAngle(tt);
-    rocket.style.left = (pos.x - 30) + 'px';
-    rocket.style.top = (pos.y - 30) + 'px';
-    rocket.style.transform = `rotate(-90deg)`;
-    // フェードアウトをゴール直前から始める
-    if (t > 0.85) {
-      rocket.style.opacity = String(1 - (t - 0.85) / 0.15);
-    }
-    requestAnimationFrame(animate);
-  }
-  animate();
-}
 
 // ==============================
 // CSV日付データとイベント管理
@@ -297,11 +112,11 @@ const attackEvents = [
 
 // CSVから読み取った日付データ（ユニークな日付のみ）
 const csvDates = [
-  { index: 0, date: '2020/01/08', year: 2020, month: 1, day: 8, description: 'イラン革命防衛隊基地・米軍基地攻撃', hasB2: true, hasMissile: true },
-  { index: 1, date: '2021/10/20', year: 2021, month: 10, day: 20, description: 'バグダッド・アル＝タンフ基地攻撃', hasB2: false, hasMissile: true },
-  { index: 2, date: '2024/02/03', year: 2024, month: 2, day: 3, description: 'サアダ州・エイラット攻撃', hasB2: false, hasMissile: true },
-  { index: 3, date: '2024/11/19', year: 2024, month: 11, day: 19, description: '紅海上攻撃', hasB2: false, hasMissile: true },
-  { index: 4, date: '現在', year: 2024, month: 12, day: 1, description: '現在の状況', hasB2: false, hasMissile: false }
+  { index: 0, date: '2020/01/08', year: 2020, month: 1, day: 8, description: 'イラン革命防衛隊基地・米軍基地攻撃' },
+  { index: 1, date: '2021/10/20', year: 2021, month: 10, day: 20, description: 'バグダッド・アル＝タンフ基地攻撃' },
+  { index: 2, date: '2024/02/03', year: 2024, month: 2, day: 3, description: 'サアダ州・エイラット攻撃' },
+  { index: 3, date: '2024/11/19', year: 2024, month: 11, day: 19, description: '紅海上攻撃' },
+  { index: 4, date: '現在', year: 2024, month: 12, day: 1, description: '現在の状況' }
 ];
 
 // ==============================
@@ -315,7 +130,173 @@ map.on('load', () => {
   if (typeof addCSVMarkers === 'function') {
     addCSVMarkers();
   }
+  // 初回ロード時に時系列イベントを順番に自動再生
+  playTimelineEventsSequentially();
 });
+// 時系列イベントを順番に自動再生
+function playTimelineEventsSequentially() {
+  let idx = 0;
+  function playNext() {
+    if (idx >= csvDates.length) return;
+    timelineRange.value = idx;
+    timelineRange.dispatchEvent(new Event('input'));
+    const currentEvent = csvDates[idx];
+    // 各イベントのアニメーション終了後に次へ
+    if (currentEvent.date === '2020/01/08') {
+      play20200108(() => { idx++; playNext(); });
+    } else if (currentEvent.date === '2021/10/20') {
+      play20211020(() => { idx++; playNext(); });
+    } else if (currentEvent.date === '2024/02/03') {
+      play20240203(() => { idx++; playNext(); });
+    } else if (currentEvent.date === '2024/11/19') {
+      play20241119(() => { idx++; playNext(); });
+    } else {
+      // "現在" などは即次へ
+      idx++;
+      playNext();
+    }
+  }
+  playNext();
+}
+
+// 各イベントのアニメーション完了時にコールバック
+function play20200108(cb) {
+  launchMultipleRocketsWithCallback(cb);
+}
+function play20211020(cb) {
+  launchBaghdadToTanfRocketWithCallback(cb);
+}
+function play20240203(cb) {
+  // 2方向ロケットを同時に発射し、両方終わったらcb
+  let finished = 0;
+  function onEnd() { finished++; if (finished === 2) cb && cb(); }
+  launchSaadaToEilatPartialRocketWithCallback(onEnd);
+  launchEilatToSaadaPartialRocketWithCallback(onEnd);
+}
+function play20241119(cb) {
+  showRedSeaCirclesWithCallback(cb);
+}
+
+// --- アニメーション付きコールバック関数群 ---
+function launchMultipleRocketsWithCallback(cb) {
+  document.querySelectorAll('.rocket-animation').forEach(el => el.remove());
+  const start = [47.0650, 34.3142];
+  const end = [42.4411, 33.7866];
+  const erbil = [43.9632, 36.2381];
+  let finished = 0;
+  const rocketCount = 10;
+  const total = 12;
+  function onEnd() { finished++; if (finished === total) cb && cb(); }
+  for (let i = 0; i < rocketCount; i++) {
+    setTimeout(() => animateRocketWithEnd(start, end, i, 60, undefined, onEnd), i * 400);
+  }
+  for (let i = 0; i < 2; i++) {
+    setTimeout(() => animateRocketWithEnd(start, erbil, 100 + i, 60, undefined, onEnd), rocketCount * 400 + i * 400);
+  }
+}
+function animateRocketWithEnd(start, end, rocketIndex, rocketSize, trueEnd, cb) {
+  const rocket = document.createElement('img');
+  rocket.src = 'images/missile.png';
+  rocket.className = 'rocket-animation';
+  rocket.style.position = 'absolute';
+  rocket.style.width = (rocketSize || 60) + 'px';
+  rocket.style.height = (rocketSize || 60) + 'px';
+  rocket.style.pointerEvents = 'none';
+  rocket.style.zIndex = 1000;
+  rocket.style.transition = 'none';
+  rocket.style.transform = 'rotate(-90deg)';
+  document.body.appendChild(rocket);
+  const control = [
+    (start[0] + (trueEnd || end)[0]) / 2 + 2,
+    (start[1] + (trueEnd || end)[1]) / 2 + 2
+  ];
+  let startTime = null;
+  const duration = 1800;
+  function animate(ts) {
+    if (!startTime) startTime = ts;
+    const t = Math.min((ts - startTime) / duration, 1);
+    const lng = (1 - t) * (1 - t) * start[0] + 2 * (1 - t) * t * control[0] + t * t * end[0];
+    const lat = (1 - t) * (1 - t) * start[1] + 2 * (1 - t) * t * control[1] + t * t * end[1];
+    const dt = 0.01;
+    let lng2, lat2;
+    if (t + dt <= 1) {
+      lng2 = (1 - (t + dt)) * (1 - (t + dt)) * start[0] + 2 * (1 - (t + dt)) * (t + dt) * control[0] + (t + dt) * (t + dt) * end[0];
+      lat2 = (1 - (t + dt)) * (1 - (t + dt)) * start[1] + 2 * (1 - (t + dt)) * (t + dt) * control[1] + (t + dt) * (t + dt) * end[1];
+    } else {
+      lng2 = (trueEnd || end)[0];
+      lat2 = (trueEnd || end)[1];
+    }
+    const pos = map.project([lng, lat]);
+    const pos2 = map.project([lng2, lat2]);
+    const dx = pos2.x - pos.x;
+    const dy = pos2.y - pos.y;
+    const angle = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+    rocket.style.left = `${pos.x - (rocketSize || 60) / 2}px`;
+    rocket.style.top = `${pos.y - (rocketSize || 60) / 2}px`;
+    rocket.style.transform = `rotate(${angle}deg)`;
+    if (t < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      rocket.remove();
+      cb && cb();
+    }
+  }
+  requestAnimationFrame(animate);
+}
+function launchBaghdadToTanfRocketWithCallback(cb) {
+  document.querySelectorAll('.rocket-animation').forEach(el => el.remove());
+  const start = [44.3661, 32.9122];
+  const end = [38.6150, 33.4406];
+  animateRocketWithEnd(start, end, 200, 80, undefined, cb);
+}
+function launchSaadaToEilatPartialRocketWithCallback(cb) {
+  document.querySelectorAll('.rocket-animation').forEach(el => el.remove());
+  const start = [43.7631, 16.9403];
+  const eilat = [34.9482, 29.5581];
+  const partial = [
+    start[0] + (eilat[0] - start[0]) * 0.55,
+    start[1] + (eilat[1] - start[1]) * 0.55
+  ];
+  animateRocketWithEnd(start, partial, 300, 70, eilat, cb);
+}
+function launchEilatToSaadaPartialRocketWithCallback(cb) {
+  // 既存ロケットを消さない
+  const start = [34.9482, 29.5581];
+  const saada = [43.7631, 16.9403];
+  const partial = [
+    start[0] + (saada[0] - start[0]) * 0.55,
+    start[1] + (saada[1] - start[1]) * 0.55
+  ];
+  animateRocketWithEnd(start, partial, 301, 70, saada, cb);
+}
+function showRedSeaCirclesWithCallback(cb) {
+  document.querySelectorAll('.redsea-circle').forEach(el => el.remove());
+  const positions = [
+    [38.5, 20.5],
+    [40.0, 19.5],
+    [41.5, 21.0]
+  ];
+  positions.forEach(pos => {
+    const circle = document.createElement('div');
+    circle.className = 'redsea-circle';
+    circle.style.position = 'absolute';
+    circle.style.width = '48px';
+    circle.style.height = '48px';
+    circle.style.border = '4px solid #00BFFF';
+    circle.style.borderRadius = '50%';
+    circle.style.background = 'rgba(0,191,255,0.15)';
+    circle.style.zIndex = 1200;
+    circle.style.pointerEvents = 'none';
+    const screen = map.project(pos);
+    circle.style.left = (screen.x - 24) + 'px';
+    circle.style.top = (screen.y - 24) + 'px';
+    document.body.appendChild(circle);
+  });
+  setTimeout(() => {
+    document.querySelectorAll('.redsea-circle').forEach(el => el.remove());
+    cb && cb();
+  }, 3000);
+}
 
 // ベースマップ切替時
 document.getElementById('basemap-select').addEventListener('change', function(e) {
@@ -338,22 +319,281 @@ const timelineLabel = document.getElementById('timeline-label');
 timelineRange.addEventListener('input', function() {
   const index = parseInt(timelineRange.value);
   const currentEvent = csvDates[index];
-  
   if (currentEvent) {
     timelineLabel.textContent = currentEvent.date;
-    
-    // B2爆撃機イベント
-    if (currentEvent.hasB2) {
-      flyB2Plane();
-    } else {
-      document.getElementById('b2-plane').style.display = 'none';
+    // 2020/01/08のみロケットアニメーション
+    if (currentEvent.date === '2020/01/08') {
+      launchMultipleRockets();
     }
-    
-    // ミサイル攻撃イベント（CSVデータ対応）
-    if (currentEvent.hasMissile) {
-      flyRocket(currentEvent.date);
+    // 2021/10/20はバグダッド南部→アル＝タンフ基地
+    if (currentEvent.date === '2021/10/20') {
+      launchBaghdadToTanfRocket();
+    }
+    // 2024/02/03はサアダ州→エイラット途中まで
+    if (currentEvent.date === '2024/02/03') {
+      launchSaadaToEilatPartialRocket();
+      launchEilatToSaadaPartialRocket();
+    }
+    // 2024/11/19は紅海上に○を3つ3秒表示
+    if (currentEvent.date === '2024/11/19') {
+      showRedSeaCircles();
+    }
+// 2024/11/19 紅海上に○を3つ3秒表示
+function showRedSeaCircles() {
+  // 既存の○を消す
+  document.querySelectorAll('.redsea-circle').forEach(el => el.remove());
+  // 紅海上の座標例（適宜調整）
+  const positions = [
+    [38.5, 20.5], // 西側
+    [40.0, 19.5], // 中央
+    [41.5, 21.0]  // 東側
+  ];
+  positions.forEach(pos => {
+    const circle = document.createElement('div');
+    circle.className = 'redsea-circle';
+    circle.style.position = 'absolute';
+    circle.style.width = '48px';
+    circle.style.height = '48px';
+    circle.style.border = '4px solid #00BFFF';
+    circle.style.borderRadius = '50%';
+    circle.style.background = 'rgba(0,191,255,0.15)';
+    circle.style.zIndex = 1200;
+    circle.style.pointerEvents = 'none';
+    // 地図座標→画面座標
+    const screen = map.project(pos);
+    circle.style.left = (screen.x - 24) + 'px';
+    circle.style.top = (screen.y - 24) + 'px';
+    document.body.appendChild(circle);
+  });
+  setTimeout(() => {
+    document.querySelectorAll('.redsea-circle').forEach(el => el.remove());
+  }, 3000);
+}
+  }
+});
+// 2024/02/03 エイラット→サアダ州の途中までロケットアニメーション
+function launchEilatToSaadaPartialRocket() {
+  // 既存ロケットを消す（重複消し防止のため消さない）
+
+  // エイラット（イスラエル南部）
+  const start = [34.9482, 29.5581]; // [lng, lat]
+  // サアダ州（イエメン北部、フーシ派拠点）
+  const saada = [43.7631, 16.9403]; // [lng, lat]
+  // 途中地点（サアダ州の55%地点）
+  const partial = [
+    start[0] + (saada[0] - start[0]) * 0.55,
+    start[1] + (saada[1] - start[1]) * 0.55
+  ];
+  // ベジェ曲線の制御点をサアダ州方向に向けるためendにsaadaを渡す
+  animateRocket(start, partial, 301, 70, saada);
+}
+// 2024/02/03 サアダ州（イエメン北部、フーシ派拠点）→エイラット（イスラエル南部）の途中までロケットアニメーション
+function launchSaadaToEilatPartialRocket() {
+  document.querySelectorAll('.rocket-animation').forEach(el => el.remove());
+  const start = [43.7631, 16.9403];
+  const eilat = [34.9482, 29.5581];
+  const partial = [
+    start[0] + (eilat[0] - start[0]) * 0.55,
+    start[1] + (eilat[1] - start[1]) * 0.55
+  ];
+  window.saadaToEilatRocket = animateRocketWithReturn(start, partial, 300, 70, eilat, 'saadaToEilat');
+}
+// 2021/10/20 バグダッド南部（PMF拠点）→アル＝タンフ基地（シリア）ロケットアニメーション
+function launchBaghdadToTanfRocket() {
+  // 既存ロケットを消す
+  document.querySelectorAll('.rocket-animation').forEach(el => el.remove());
+
+  // バグダッド南部（PMF拠点）
+  const start = [44.3661, 32.9122]; // [lng, lat] 例: Dora地区付近
+  // アル＝タンフ基地（シリア）
+  const end = [38.6150, 33.4406]; // [lng, lat] 既存データ参照
+
+  // 1発ロケットを発射
+  animateRocket(start, end, 200, 80);
+}
+// 初期ラベル表示
+timelineLabel.textContent = csvDates[4].date;
+
+// 攻撃ピンを全て非表示にする
+
+// ==============================
+// ロケットアニメーション
+// ==============================
+function launchMultipleRockets() {
+  // 既存ロケットを消す
+  document.querySelectorAll('.rocket-animation').forEach(el => el.remove());
+
+  // ケルマーンシャー州（イラン）
+  const start = [47.0650, 34.3142]; // [lng, lat]
+  // アイン・アル＝アサド空軍基地（イラク）
+  const end = [42.4411, 33.7866]; // [lng, lat]
+  // エルビル空港近郊（イラク・クルド自治区）
+  const erbil = [43.9632, 36.2381]; // [lng, lat]
+
+  // アサド空軍基地へ10発
+  const rocketCount = 10;
+  for (let i = 0; i < rocketCount; i++) {
+    setTimeout(() => animateRocket(start, end, i), i * 400); // ずらして発射
+  }
+  // エルビル空港近郊へ2発（アサド基地の後に発射）
+  for (let i = 0; i < 2; i++) {
+    setTimeout(() => animateRocket(start, erbil, 100 + i), rocketCount * 400 + i * 400);
+  }
+}
+
+function animateRocket(start, end, rocketIndex) {
+  // ロケット画像要素作成
+  const rocket = document.createElement('img');
+  rocket.src = 'images/missile.png';
+  rocket.className = 'rocket-animation';
+  rocket.style.position = 'absolute';
+  // rocketSize: デフォルト60, 指定あればそのサイズ
+  const rocketSize = arguments.length >= 4 ? arguments[3] : 60;
+  rocket.style.width = rocketSize + 'px';
+  rocket.style.height = rocketSize + 'px';
+  // ベジェ曲線の制御点や進行方向のための本来のend座標を指定できるようにする
+  const trueEnd = arguments.length >= 5 ? arguments[4] : end;
+  rocket.style.pointerEvents = 'none';
+  rocket.style.zIndex = 1000;
+  rocket.style.transition = 'none';
+  // 初期角度は進行方向に合わせて後で設定
+  rocket.style.transform = 'rotate(-90deg)';
+  document.body.appendChild(rocket);
+
+  // ベジェ曲線の制御点（弧を描く）
+  const control = [
+    (start[0] + trueEnd[0]) / 2 + 2, // lng方向に少し膨らませる
+    (start[1] + trueEnd[1]) / 2 + 2  // lat方向に少し膨らませる
+  ];
+
+  let startTime = null;
+  const duration = 1800; // ms
+
+  function animate(ts) {
+    if (!startTime) startTime = ts;
+    const t = Math.min((ts - startTime) / duration, 1);
+
+    // ベジェ曲線上の点を計算
+    const lng = (1 - t) * (1 - t) * start[0] + 2 * (1 - t) * t * control[0] + t * t * end[0];
+    const lat = (1 - t) * (1 - t) * start[1] + 2 * (1 - t) * t * control[1] + t * t * end[1];
+
+    // 進行方向の角度を計算
+    // 少し先の点を使って角度を出す
+    const dt = 0.01;
+    let lng2, lat2;
+    if (t + dt <= 1) {
+      lng2 = (1 - (t + dt)) * (1 - (t + dt)) * start[0] + 2 * (1 - (t + dt)) * (t + dt) * control[0] + (t + dt) * (t + dt) * end[0];
+      lat2 = (1 - (t + dt)) * (1 - (t + dt)) * start[1] + 2 * (1 - (t + dt)) * (t + dt) * control[1] + (t + dt) * (t + dt) * end[1];
     } else {
-      document.getElementById('rocket').style.display = 'none';
+      lng2 = trueEnd[0];
+      lat2 = trueEnd[1];
+    }
+    const pos = map.project([lng, lat]);
+    const pos2 = map.project([lng2, lat2]);
+    const dx = pos2.x - pos.x;
+    const dy = pos2.y - pos.y;
+    // 画像の「左向き」が進行方向0度なので、+90度補正
+    const angle = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+    rocket.style.left = `${pos.x - 30}px`;
+    rocket.style.top = `${pos.y - 30}px`;
+    rocket.style.transform = `rotate(${angle}deg)`;
+
+    if (t < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      rocket.remove();
     }
   }
+  requestAnimationFrame(animate);
+}
+
+// --- 1. animateRocketWithReturnの追加（animateRocketの下などに追記） ---
+function animateRocketWithReturn(start, end, rocketIndex, rocketSize, trueEnd, key) {
+  const rocket = document.createElement('img');
+  rocket.src = 'images/missile.png';
+  rocket.className = 'rocket-animation';
+  rocket.style.position = 'absolute';
+  rocket.style.width = (rocketSize || 60) + 'px';
+  rocket.style.height = (rocketSize || 60) + 'px';
+  rocket.style.pointerEvents = 'none';
+  rocket.style.zIndex = 1000;
+  rocket.style.transition = 'none';
+  rocket.style.transform = 'rotate(-90deg)';
+  document.body.appendChild(rocket);
+  const control = [
+    (start[0] + (trueEnd || end)[0]) / 2 + 2,
+    (start[1] + (trueEnd || end)[1]) / 2 + 2
+  ];
+  let startTime = null;
+  const duration = 1800;
+  function animate(ts) {
+    if (!startTime) startTime = ts;
+    const t = Math.min((ts - startTime) / duration, 1);
+    const lng = (1 - t) * (1 - t) * start[0] + 2 * (1 - t) * t * control[0] + t * t * end[0];
+    const lat = (1 - t) * (1 - t) * start[1] + 2 * (1 - t) * t * control[1] + t * t * end[1];
+    const dt = 0.01;
+    let lng2, lat2;
+    if (t + dt <= 1) {
+      lng2 = (1 - (t + dt)) * (1 - (t + dt)) * start[0] + 2 * (1 - (t + dt)) * (t + dt) * control[0] + (t + dt) * (t + dt) * end[0];
+      lat2 = (1 - (t + dt)) * (1 - (t + dt)) * start[1] + 2 * (1 - (t + dt)) * (t + dt) * control[1] + (t + dt) * (t + dt) * end[1];
+    } else {
+      lng2 = (trueEnd || end)[0];
+      lat2 = (trueEnd || end)[1];
+    }
+    const pos = map.project([lng, lat]);
+    const pos2 = map.project([lng2, lat2]);
+    const dx = pos2.x - pos.x;
+    const dy = pos2.y - pos.y;
+    const angle = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+    rocket.style.left = `${pos.x - (rocketSize || 60) / 2}px`;
+    rocket.style.top = `${pos.y - (rocketSize || 60) / 2}px`;
+    rocket.style.transform = `rotate(${angle}deg)`;
+    if (t < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      // ぶつかる位置で両方消す
+      if (key === 'saadaToEilat' && window.eilatToSaadaRocket) {
+        rocket.remove();
+        window.eilatToSaadaRocket.remove();
+        window.saadaToEilatRocket = null;
+        window.eilatToSaadaRocket = null;
+      } else if (key === 'eilatToSaada' && window.saadaToEilatRocket) {
+        rocket.remove();
+        window.saadaToEilatRocket.remove();
+        window.saadaToEilatRocket = null;
+        window.eilatToSaadaRocket = null;
+      } else {
+        rocket.remove();
+      }
+    }
+  }
+  requestAnimationFrame(animate);
+  return rocket;
+}
+
+// ロケット画像の色反転フィルター適用/解除
+function updateRocketImageFilter(styleKey) {
+  const invert = styleKey === 'darkmatter';
+  document.querySelectorAll('.rocket-animation').forEach(el => {
+    el.style.filter = invert ? 'invert(1) brightness(1.2)' : '';
+  });
+  // 新規発射時にも反映するためグローバル変数で保持
+  window.__rocketInvert = invert;
+}
+
+// 最初のスタイル適用時にフィルター更新
+updateRocketImageFilter('satellite');
+document.getElementById('basemap-select').addEventListener('change', function(e) {
+  const selected = e.target.value;
+  map.setStyle(styles[selected]);
+  map.once('styledata', () => {
+    map.setCenter(center);
+    map.setZoom(zoom);
+    addMarkers(map);
+    // CSVデータからのマーカーも再追加
+    if (typeof addCSVMarkers === 'function') {
+      addCSVMarkers();
+    }
+  });
+  updateRocketImageFilter(selected);
 });
