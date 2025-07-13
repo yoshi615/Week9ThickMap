@@ -191,95 +191,84 @@ function flyRocket() {
   // 既存の複製ロケットを削除
   document.querySelectorAll('.rocket-clone').forEach(e => e.remove());
 
-  // 6個のロケットを発射
-  const rocketCount = 6;
-  const angleStep = 40; // 弧の角度のずらし幅（度数、調整可）
-  const baseOffset = -100; // 弧の高さの基準（調整可）
+  // 1つだけロケットを発射
+  const rocket = document.getElementById('rocket').cloneNode(true);
+  rocket.classList.add('rocket-clone');
+  rocket.style.display = 'block';
+  rocket.style.opacity = '1';
+  rocket.style.position = 'absolute';
+  rocket.style.pointerEvents = 'none';
+  rocket.style.zIndex = 11;
+  rocket.id = '';
+  document.body.appendChild(rocket);
 
-  for (let i = 0; i < rocketCount; i++) {
-    // クローンを作成
-    const rocket = document.getElementById('rocket').cloneNode(true);
-    rocket.classList.add('rocket-clone');
-    rocket.style.display = 'block';
-    rocket.style.opacity = '1';
-    rocket.style.position = 'absolute';
-    rocket.style.pointerEvents = 'none';
-    rocket.style.zIndex = 11;
-    rocket.id = ''; // id重複防止
-    document.body.appendChild(rocket);
-
-    // 角度ずらし（-100〜+100pxの範囲で弧の高さを変える）
-    const angleOffset = (i - (rocketCount - 1) / 2) * angleStep;
-    const rad = angleOffset * Math.PI / 180;
-
-    function lngLatToScreen(lngLat) {
-      const p = map.project(lngLat);
-      return { x: p.x, y: p.y };
-    }
-    function getAngle(from, to) {
-      const dx = to.x - from.x;
-      const dy = to.y - from.y;
-      // 画像の「下が進行方向」なら+90度
-      return Math.atan2(dy, dx) * 180 / Math.PI + 90;
-    }
-
-    // イラン→アメリカ
-    let start = lngLatToScreen(iranLngLat);
-    let end = lngLatToScreen(usaLngLat);
-
-    // 弧のコントロールポイント（中間点を上方向にずらす）
-    const midX = (start.x + end.x) / 2;
-    const midY = (start.y + end.y) / 2;
-    const dx = end.x - start.x;
-    const dy = end.y - start.y;
-    // 垂直方向の単位ベクトル
-    const len = Math.sqrt(dx * dx + dy * dy);
-    const nx = -dy / len;
-    const ny = dx / len;
-    // コントロールポイントを中心から垂直方向にずらす
-    const control = {
-      x: midX,
-      y: midY - Math.abs(baseOffset + 60 * Math.sin(rad)) // 上方向にずらす（マイナスで上）
-    };
-
-    let t = 0;
-    function easeInOutSine(x) {
-      return -(Math.cos(Math.PI * x) - 1) / 2;
-    }
-    function getBezierPoint(t) {
-      // 2次ベジェ曲線
-      const x = (1 - t) * (1 - t) * start.x + 2 * (1 - t) * t * control.x + t * t * end.x;
-      const y = (1 - t) * (1 - t) * start.y + 2 * (1 - t) * t * control.y + t * t * end.y;
-      return { x, y };
-    }
-    function getBezierAngle(t) {
-      // ベジェ曲線の接線方向
-      const dx = 2 * (1 - t) * (control.x - start.x) + 2 * t * (end.x - control.x);
-      const dy = 2 * (1 - t) * (control.y - start.y) + 2 * t * (end.y - control.y);
-      return Math.atan2(dy, dx) * 180 / Math.PI + 90;
-    }
-    function animate() {
-      t += 0.008;
-      if (t > 1) {
-        t = 1;
-        // アニメーション終了時の処理
-        rocket.remove();
-        return;
-      }
-      const tt = easeInOutSine(t);
-      const pos = getBezierPoint(tt);
-      const bezierAngle = getBezierAngle(tt);
-      rocket.style.left = (pos.x - 30) + 'px';
-      rocket.style.top = (pos.y - 30) + 'px';
-      rocket.style.transform = `rotate(${bezierAngle}deg)`;
-      // フェードアウトをゴール直前から始める
-      if (t > 0.85) {
-        rocket.style.opacity = String(1 - (t - 0.85) / 0.15);
-      }
-      requestAnimationFrame(animate);
-    }
-    animate();
+  function lngLatToScreen(lngLat) {
+    const p = map.project(lngLat);
+    return { x: p.x, y: p.y };
   }
+  function getAngle(from, to) {
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    // 画像の「下が進行方向」なら+90度
+    return Math.atan2(dy, dx) * 180 / Math.PI + 90;
+  }
+
+  // イラン→アメリカ
+  let start = lngLatToScreen(iranLngLat);
+  let end = lngLatToScreen(usaLngLat);
+
+  // 弧のコントロールポイント（中間点を上方向にずらす）
+  const midX = (start.x + end.x) / 2;
+  const midY = (start.y + end.y) / 2;
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  // 垂直方向の単位ベクトル
+  const len = Math.sqrt(dx * dx + dy * dy);
+  const nx = -dy / len;
+  const ny = dx / len;
+  // コントロールポイントを中心から垂直方向に少しだけずらす（弧を小さく）
+  const control = {
+    x: midX,
+    y: midY - 60 // 弧をより明確にして飛行機のような軌道に
+  };
+
+  let t = 0;
+  function easeInOutSine(x) {
+    return -(Math.cos(Math.PI * x) - 1) / 2;
+  }
+  function getBezierPoint(t) {
+    // 2次ベジェ曲線
+    const x = (1 - t) * (1 - t) * start.x + 2 * (1 - t) * t * control.x + t * t * end.x;
+    const y = (1 - t) * (1 - t) * start.y + 2 * (1 - t) * t * control.y + t * t * end.y;
+    return { x, y };
+  }
+  function getBezierAngle(t) {
+    // ベジェ曲線の接線方向
+    const dx = 2 * (1 - t) * (control.x - start.x) + 2 * t * (end.x - control.x);
+    const dy = 2 * (1 - t) * (control.y - start.y) + 2 * t * (end.y - control.y);
+    return Math.atan2(dy, dx) * 180 / Math.PI + 90;
+  }
+  function animate() {
+    t += 0.008;
+    if (t > 1) {
+      t = 1;
+      // アニメーション終了時の処理
+      rocket.remove();
+      return;
+    }
+    const tt = easeInOutSine(t);
+    const pos = getBezierPoint(tt);
+    const bezierAngle = getBezierAngle(tt);
+    rocket.style.left = (pos.x - 30) + 'px';
+    rocket.style.top = (pos.y - 30) + 'px';
+    rocket.style.transform = `rotate(-90deg)`;
+    // フェードアウトをゴール直前から始める
+    if (t > 0.85) {
+      rocket.style.opacity = String(1 - (t - 0.85) / 0.15);
+    }
+    requestAnimationFrame(animate);
+  }
+  animate();
 }
 
 // ==============================
