@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -10,12 +12,18 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- ベースマップ選択ドロップダウン -->
-  <select id="basemap-select" style="position:absolute;z-index:1;top:10px;left:10px;">
+  <!-- ベースマップ選択ドロップダウン（右上） -->
+  <select id="basemap-select" class="basemap-select">
     <option value="satellite">Googleサテライト</option>
     <option value="positron">Carto Positron</option>
     <option value="darkmatter">Carto Dark Matter</option>
   </select>
+
+  <!-- ピン凡例（右下） -->
+  <div class="pin-legend pin-legend-bottom">
+    <div class="pin-legend-item"><span class="pin-legend-icon iran"></span>イラン</div>
+    <div class="pin-legend-item"><span class="pin-legend-icon usa"></span>アメリカ</div>
+  </div>
   
   <!-- メインマップコンテナ -->
   <div id="map"></div>

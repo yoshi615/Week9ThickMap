@@ -150,8 +150,13 @@ function playTimelineEventsSequentially() {
       play20240203(() => { idx++; playNext(); });
     } else if (currentEvent.date === '2024/11/19') {
       play20241119(() => { idx++; playNext(); });
+    } else if (currentEvent.date === '現在') {
+      // 現在の時は紅海上に3つの○を永続表示
+      showRedSeaCircles(true);
+      idx++;
+      playNext();
     } else {
-      // "現在" などは即次へ
+      // その他は即次へ
       idx++;
       playNext();
     }
@@ -161,20 +166,60 @@ function playTimelineEventsSequentially() {
 
 // 各イベントのアニメーション完了時にコールバック
 function play20200108(cb) {
-  launchMultipleRocketsWithCallback(cb);
+  // アサド空軍基地（青）とエルビル空港（青）
+  launchMultipleRocketsWithCallback(() => {
+    showCircleAtPosition([42.4411, 33.7866], '#00BFFF'); // アサド空軍基地（青）
+    showCircleAtPosition([43.9632, 36.2381], '#00BFFF'); // エルビル空港（青）
+    setTimeout(cb, 300);
+  });
 }
 function play20211020(cb) {
-  launchBaghdadToTanfRocketWithCallback(cb);
+  // アル＝タンフ基地（赤）
+  launchBaghdadToTanfRocketWithCallback(() => {
+    showCircleAtPosition([38.6150, 33.4406], '#FF3333');
+    setTimeout(cb, 300);
+  });
 }
 function play20240203(cb) {
-  // 2方向ロケットを同時に発射し、両方終わったらcb
+  // サアダ州→エイラット途中（青）、エイラット→サアダ途中（赤）
   let finished = 0;
-  function onEnd() { finished++; if (finished === 2) cb && cb(); }
+  let partial1 = [43.7631 + (34.9482 - 43.7631) * 0.55, 16.9403 + (29.5581 - 16.9403) * 0.55];
+  let partial2 = [34.9482 + (43.7631 - 34.9482) * 0.55, 29.5581 + (16.9403 - 29.5581) * 0.55];
+  function onEnd() {
+    finished++;
+    if (finished === 2) {
+      showCircleAtPosition(partial1, '#00BFFF'); // サアダ→エイラット（青）
+      showCircleAtPosition(partial2, '#FF3333'); // エイラット→サアダ（赤）
+      setTimeout(cb, 300);
+    }
+  }
   launchSaadaToEilatPartialRocketWithCallback(onEnd);
   launchEilatToSaadaPartialRocketWithCallback(onEnd);
 }
 function play20241119(cb) {
-  showRedSeaCirclesWithCallback(cb);
+  // 紅海上の3点に○（既存処理）
+  showRedSeaCirclesWithCallback(() => {
+    setTimeout(cb, 0);
+  });
+}
+// 指定座標に○を3秒表示
+function showCircleAtPosition(lngLat) {
+  // color: ピン色（青: #00BFFF, 赤: #FF3333, 金: #FFD700 など）
+  const color = arguments.length >= 2 ? arguments[1] : '#FFD700';
+  const circle = document.createElement('div');
+  circle.className = 'event-circle';
+  circle.style.position = 'absolute';
+  circle.style.width = '48px';
+  circle.style.height = '48px';
+  circle.style.border = `4px solid ${color}`;
+  circle.style.borderRadius = '50%';
+  circle.style.background = color === '#FFD700' ? 'rgba(255,215,0,0.15)' : (color === '#00BFFF' ? 'rgba(0,191,255,0.15)' : 'rgba(255,51,51,0.15)');
+  circle.style.zIndex = 1300;
+  circle.style.pointerEvents = 'none';
+  const screen = map.project(lngLat);
+  circle.style.left = (screen.x - 24) + 'px';
+  circle.style.top = (screen.y - 24) + 'px';
+  document.body.appendChild(circle);
 }
 
 // --- アニメーション付きコールバック関数群 ---
@@ -269,14 +314,19 @@ function launchEilatToSaadaPartialRocketWithCallback(cb) {
   ];
   animateRocketWithEnd(start, partial, 301, 70, saada, cb);
 }
-function showRedSeaCirclesWithCallback(cb) {
+// 2024/11/19・現在 紅海上の3つの円を表示。isPermanent=trueなら消さずに残す
+function showRedSeaCircles(isPermanent) {
+  // 既存の○を消す
   document.querySelectorAll('.redsea-circle').forEach(el => el.remove());
   const positions = [
     [38.5, 20.5],
     [40.0, 19.5],
     [41.5, 21.0]
   ];
-  positions.forEach(pos => {
+  // 既存の○を消す
+  document.querySelectorAll('.redsea-circle').forEach(el => el.remove());
+  // 円DOMを一度だけ作成し、地図イベント時は位置だけ更新
+  const circles = positions.map(pos => {
     const circle = document.createElement('div');
     circle.className = 'redsea-circle';
     circle.style.position = 'absolute';
@@ -287,15 +337,32 @@ function showRedSeaCirclesWithCallback(cb) {
     circle.style.background = 'rgba(0,191,255,0.15)';
     circle.style.zIndex = 1200;
     circle.style.pointerEvents = 'none';
-    const screen = map.project(pos);
-    circle.style.left = (screen.x - 24) + 'px';
-    circle.style.top = (screen.y - 24) + 'px';
     document.body.appendChild(circle);
+    return circle;
   });
-  setTimeout(() => {
-    document.querySelectorAll('.redsea-circle').forEach(el => el.remove());
-    cb && cb();
-  }, 3000);
+  function updateCirclePositions() {
+    positions.forEach((pos, i) => {
+      const screen = map.project(pos);
+      circles[i].style.left = (screen.x - 24) + 'px';
+      circles[i].style.top = (screen.y - 24) + 'px';
+    });
+  }
+  updateCirclePositions();
+  if (isPermanent) {
+    map.on('move', updateCirclePositions);
+    map.on('resize', updateCirclePositions);
+    window.__removeRedSeaCircleListeners = function() {
+      map.off('move', updateCirclePositions);
+      map.off('resize', updateCirclePositions);
+      circles.forEach(el => el.remove());
+    };
+  } else {
+    setTimeout(() => {
+      map.off('move', updateCirclePositions);
+      map.off('resize', updateCirclePositions);
+      circles.forEach(el => el.remove());
+    }, 3000);
+  }
 }
 
 // ベースマップ切替時
@@ -336,7 +403,9 @@ timelineRange.addEventListener('input', function() {
     }
     // 2024/11/19は紅海上に○を3つ3秒表示
     if (currentEvent.date === '2024/11/19') {
-      showRedSeaCircles();
+      showRedSeaCircles(false);
+    } else if (currentEvent.date === '現在') {
+      showRedSeaCircles(true);
     }
 // 2024/11/19 紅海上に○を3つ3秒表示
 function showRedSeaCircles() {
