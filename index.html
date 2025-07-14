@@ -1,34 +1,26 @@
-
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>What's happened?</title>
-  <!-- MapLibre GL スタイルシート -->
   <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet" />
-  <!-- カスタムスタイルシート -->
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- ベースマップ選択ドロップダウン（右上） -->
   <select id="basemap-select" class="basemap-select">
     <option value="satellite">Googleサテライト</option>
     <option value="positron">Carto Positron</option>
     <option value="darkmatter">Carto Dark Matter</option>
   </select>
 
-  <!-- ピン凡例（右下） -->
-  <div class="pin-legend pin-legend-bottom">
+  <div class="pin-legend">
     <div class="pin-legend-item"><span class="pin-legend-icon iran"></span>イラン</div>
     <div class="pin-legend-item"><span class="pin-legend-icon usa"></span>アメリカ</div>
   </div>
-  
-  <!-- メインマップコンテナ -->
+
   <div id="map"></div>
-  
-  <!-- 時系列スライダーバー -->
+
   <div id="timeline-bar">
     <input type="range" id="timeline-range" min="0" max="4" value="4" step="1">
     <span id="timeline-label">現在</span>
@@ -41,22 +33,8 @@
     </div>
   </div>
 
-  <!-- アニメーション用の画像要素 -->
-  <!-- B2爆撃機画像 (2005年のイベント用) -->
-  <img id="b2-plane" src="images/B2.png" 
-       style="position:absolute; width:48px; height:auto; pointer-events:none; z-index:10; display:none;" 
-       alt="B2爆撃機" />
-  
-  <!-- ロケット画像 (2025年のイベント用) -->
-  <img id="rocket" src="images/missile.png" 
-       style="position:absolute; width:60px; height:auto; pointer-events:none; z-index:11; display:none;" 
-       alt="ロケット" />
-
-  <!-- 外部ライブラリとスクリプト -->
   <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
-  <!-- データ取得スクリプト -->
   <script src="getdata.js"></script>
-  <!-- メインアプリケーションスクリプト -->
   <script src="map.js"></script>
 </body>
 </html>
